@@ -14,4 +14,6 @@ Plugin 'ycm-core/YouCompleteMe'
 call vundle#end()            " required
 filetype plugin indent on    " required
 
+colo molokai
+syntax on
 let g:molokai_original = 1
