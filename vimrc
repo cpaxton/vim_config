@@ -9,6 +9,7 @@ call vundle#begin()
 
 " " let Vundle manage Vundle, required
 Plugin 'VundleVim/Vundle.vim'
+Plugin 'ycm-core/YouCompleteMe'
 
 call vundle#end()            " required
 filetype plugin indent on    " required
