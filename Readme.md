@@ -10,6 +10,14 @@ Symlink vimrc to `~/.vimrc`
 
 Add `aliases` to bashrc
 
+
+### Byobu config
+
+```
+set -g mouse on
+set -g default-terminal "screen-256color"
+```
+
 ### Github copilot
 
 [Getting started](https://github.com/github/copilot.vim#getting-started)
