@@ -8,3 +8,6 @@ alias rsb="source $HOME/.bashrc"
 alias rs="source $HOME/.bashrc"
 
 alias empty_trash="$HOME/.vim/scripts/empty_trash"
+
+alias mujoco="export LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libGLEW.so"
+alias MJPL='LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libGLEW.so:/usr/lib/nvidia-384/libGL.so'
