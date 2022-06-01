@@ -10,4 +10,9 @@ alias rs="source $HOME/.bashrc"
 alias empty_trash="$HOME/.vim/scripts/empty_trash"
 
 alias mujoco="export LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libGLEW.so"
-alias MJPL='LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libGLEW.so:/usr/lib/nvidia-384/libGL.so'
+# alias MJPL='LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libGLEW.so:/usr/lib/nvidia-384/libGL.so'
+alias MJPL='LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libGLEW.so:/usr/lib/x86_64-linux-gnu/libGL.so'
+
+alias noetic="source /opt/ros/noetic/setup.bash"
+alias foxy="source /opt/ros/foxy/setup.bash"
+alias galactic="source /opt/ros/galactic/setup.bash"
