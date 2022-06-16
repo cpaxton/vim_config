@@ -16,3 +16,4 @@ alias MJPL='LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libGLEW.so:/usr/lib/x86_64-linu
 alias noetic="source /opt/ros/noetic/setup.bash"
 alias foxy="source /opt/ros/foxy/setup.bash"
 alias galactic="source /opt/ros/galactic/setup.bash"
+alias rosws="source $HOME/catkin_ws/devel/setup.bash"
