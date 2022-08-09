@@ -19,3 +19,4 @@ alias galactic="source /opt/ros/galactic/setup.bash"
 
 # ROS workspace
 alias rosws="source $HOME/catkin_ws/devel/setup.bash"
+alias noconda="conda deactivate && conda deactivate"
