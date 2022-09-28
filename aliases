@@ -20,3 +20,9 @@ alias galactic="source /opt/ros/galactic/setup.bash"
 # ROS workspace
 alias rosws="source $HOME/catkin_ws/devel/setup.bash"
 alias noconda="conda deactivate && conda deactivate"
+
+# Tailscale setup
+#export LOCOBOT_IP=100.114.35.92
+#cd fairo/droidlet/lowlevel/hello_robot/remote
+#. droidlet/bin/activate
+alias droidlet="cd $HOME/fairo/droidlet/lowlevel/hello_robot/remote && . droidlet/bin/activate"
