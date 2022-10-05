@@ -9,9 +9,12 @@ rm -r .byobu
 ln -s $HOME/.vim/byobu $HOME/.byobu
 ```
 
-In `~/.bashrc`:
+In `~/.bashrc` add:
 ```
+source $HOME/.vim/aliases
 ```
+
+Create a new SSH key [following these instructions.](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent)
 
 ## Other Stuff - April 2022
 
