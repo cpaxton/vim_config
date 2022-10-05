@@ -1,3 +1,18 @@
+# Console Config
+
+```
+sudo apt install build-essential git vim-gtk3 byobu
+cd $HOME
+git clone git@github.com:cpaxton/vim_config.git .vim --recursive
+ln -s $HOME/.vim/vimrc .vimrc
+rm -r .byobu
+ln -s $HOME/.vim/byobu $HOME/.byobu
+```
+
+In `~/.bashrc`:
+```
+```
+
 ## Other Stuff - April 2022
 
 ```
