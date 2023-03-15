@@ -20,3 +20,5 @@ filetype plugin indent on    " required
 colo molokai
 syntax on
 let g:molokai_original = 1
+" set autoread
+set autoread | au CursorHold * checktime | call feedkeys("lh")
