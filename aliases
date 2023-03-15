@@ -17,3 +17,10 @@ alias noetic="source /opt/ros/noetic/setup.bash"
 alias foxy="source /opt/ros/foxy/setup.bash"
 alias galactic="source /opt/ros/galactic/setup.bash"
 alias rosws="source $HOME/catkin_ws/devel/setup.bash"
+
+# Default here
+export CUDA_HOME=/usr/local/cuda
+
+# Convenience functions for robotics research
+alias pyrep="export COPPELIASIM_ROOT=$HOME/src/CoppeliaSim_Player_V4_1_0_Ubuntu20_04 && export LD_LIBRARY_PATH=$COPPELIASIM_ROOT:$LD_LIBRARY_PATH && export QT_QPA_PLATFORM_PLUGIN_PATH=$COPPELIASIM_ROOT"
+alias contact_graspnet="cd ~/src/contact_graspnet; conda activate contact_graspnet_env; python contact_graspnet/graspnet_ros_server.py  --local_regions --filter_grasps"
