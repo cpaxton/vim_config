@@ -26,3 +26,9 @@ alias noconda="conda deactivate && conda deactivate"
 #cd fairo/droidlet/lowlevel/hello_robot/remote
 #. droidlet/bin/activate
 alias droidlet="cd $HOME/fairo/droidlet/lowlevel/hello_robot/remote && . droidlet/bin/activate"
+
+alias CUDA11="export CUDA_HOME=/usr/local/cuda-11.3"
+
+# Projects
+alias bbolte="rosws && conda activate home_robot_nav && export RUN_DIR=`rospack find agent`/run && export DATA_DIR=`rospack find agent`/data && export MODEL_DIR=`rospack find agent`/model && export KITCHEN_STRETCH_LATEST_DIR=./ros/agent/run/stretch.dataset_kitchen_stretch.train/run_0 && export STRETCH_LAB_LATEST=./ros/agent/run/stretch.dataset_lab_stretch.train/run_0 && export CHESS_STRETCH_LATEST_DIR=`rospack find agent`/run/stretch.dataset_chess_stretch.train/run_0 && export EVAL_RUN_DIR=./run"
+
