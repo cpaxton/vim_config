@@ -17,8 +17,11 @@ alias noetic="source /opt/ros/noetic/setup.bash"
 alias foxy="source /opt/ros/foxy/setup.bash"
 alias galactic="source /opt/ros/galactic/setup.bash"
 
-# Default here
+# CUDA configuraiton - set default here
 export CUDA_HOME=/usr/local/cuda
+alias CUDA113="export CUDA_HOME=/usr/local/cuda-11.3 && ls $CUDA_HOME"
+alias CUDA116="export CUDA_HOME=/usr/local/cuda-11.6 && ls $CUDA_HOME"
+alias CUDA117="export CUDA_HOME=/usr/local/cuda-11.7 && ls $CUDA_HOME"
 
 # ROS workspace
 alias rosws="source $HOME/catkin_ws/devel/setup.bash"
@@ -32,9 +35,6 @@ alias noconda="conda deactivate && conda deactivate"
 # Convenience functions for robotics research
 alias droidlet="cd $HOME/fairo/droidlet/lowlevel/hello_robot/remote && . droidlet/bin/activate"
 
-alias CUDA113="export CUDA_HOME=/usr/local/cuda-11.3 && ls $CUDA_HOME"
-alias CUDA116="export CUDA_HOME=/usr/local/cuda-11.6 && ls $CUDA_HOME"
-alias CUDA117="export CUDA_HOME=/usr/local/cuda-11.7 && ls $CUDA_HOME"
 
 # Projects
 # For running USA-Nets code
