@@ -16,11 +16,22 @@ alias MJPL='LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libGLEW.so:/usr/lib/x86_64-linu
 alias noetic="source /opt/ros/noetic/setup.bash"
 alias foxy="source /opt/ros/foxy/setup.bash"
 alias galactic="source /opt/ros/galactic/setup.bash"
-alias rosws="source $HOME/catkin_ws/devel/setup.bash"
 
 # Default here
 export CUDA_HOME=/usr/local/cuda
 
+# ROS workspace
+alias rosws="source $HOME/catkin_ws/devel/setup.bash"
+alias noconda="conda deactivate && conda deactivate"
+
+# Tailscale setup
+#export LOCOBOT_IP=100.114.35.92
+#cd fairo/droidlet/lowlevel/hello_robot/remote
+#. droidlet/bin/activate
+
 # Convenience functions for robotics research
+alias droidlet="cd $HOME/fairo/droidlet/lowlevel/hello_robot/remote && . droidlet/bin/activate"
 alias pyrep="export COPPELIASIM_ROOT=$HOME/src/CoppeliaSim_Player_V4_1_0_Ubuntu20_04 && export LD_LIBRARY_PATH=$COPPELIASIM_ROOT:$LD_LIBRARY_PATH && export QT_QPA_PLATFORM_PLUGIN_PATH=$COPPELIASIM_ROOT"
 alias contact_graspnet="cd ~/src/contact_graspnet; conda activate contact_graspnet_env; python contact_graspnet/graspnet_ros_server.py  --local_regions --filter_grasps"
+
+

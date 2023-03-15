@@ -1,3 +1,21 @@
+# Console Config
+
+```
+sudo apt install build-essential git git-lfs vim-gtk3 byobu
+cd $HOME
+git clone git@github.com:cpaxton/vim_config.git .vim --recursive
+ln -s $HOME/.vim/vimrc .vimrc
+rm -r .byobu
+ln -s $HOME/.vim/byobu $HOME/.byobu
+```
+
+In `~/.bashrc` add:
+```
+source $HOME/.vim/aliases
+```
+
+Create a new SSH key [following these instructions.](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent)
+
 ## Other Stuff - April 2022
 
 ```
