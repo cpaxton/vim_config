@@ -17,6 +17,12 @@ alias noetic="source /opt/ros/noetic/setup.bash"
 alias foxy="source /opt/ros/foxy/setup.bash"
 alias galactic="source /opt/ros/galactic/setup.bash"
 
+# CUDA configuraiton - set default here
+export CUDA_HOME=/usr/local/cuda
+alias CUDA113="export CUDA_HOME=/usr/local/cuda-11.3 && ls $CUDA_HOME"
+alias CUDA116="export CUDA_HOME=/usr/local/cuda-11.6 && ls $CUDA_HOME"
+alias CUDA117="export CUDA_HOME=/usr/local/cuda-11.7 && ls $CUDA_HOME"
+
 # ROS workspace
 alias rosws="source $HOME/catkin_ws/devel/setup.bash"
 alias noconda="conda deactivate && conda deactivate"
@@ -25,4 +31,16 @@ alias noconda="conda deactivate && conda deactivate"
 #export LOCOBOT_IP=100.114.35.92
 #cd fairo/droidlet/lowlevel/hello_robot/remote
 #. droidlet/bin/activate
+
+# Convenience functions for robotics research
 alias droidlet="cd $HOME/fairo/droidlet/lowlevel/hello_robot/remote && . droidlet/bin/activate"
+
+
+# Projects
+# For running USA-Nets code
+alias bbolte="rosws && conda activate home_robot_nav && export RUN_DIR=`rospack find agent`/run && export DATA_DIR=`rospack find agent`/data && export MODEL_DIR=`rospack find agent`/model && export KITCHEN_STRETCH_LATEST_DIR=./ros/agent/run/stretch.dataset_kitchen_stretch.train/run_0 && export STRETCH_LAB_LATEST=./ros/agent/run/stretch.dataset_lab_stretch.train/run_0 && export CHESS_STRETCH_LATEST_DIR=`rospack find agent`/run/stretch.dataset_chess_stretch.train/run_0 && export EVAL_RUN_DIR=./run"
+# For setting up RL bench
+alias pyrep="export COPPELIASIM_ROOT=$HOME/src/CoppeliaSim_Player_V4_1_0_Ubuntu20_04 && export LD_LIBRARY_PATH=$COPPELIASIM_ROOT:$LD_LIBRARY_PATH && export QT_QPA_PLATFORM_PLUGIN_PATH=$COPPELIASIM_ROOT"
+# For starting contact graspnet
+alias contact_graspnet="cd ~/src/contact_graspnet; conda activate contact_graspnet_env; python contact_graspnet/graspnet_ros_server.py  --local_regions --filter_grasps"
+
