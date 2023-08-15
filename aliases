@@ -38,7 +38,7 @@ alias droidlet="cd $HOME/fairo/droidlet/lowlevel/hello_robot/remote && . droidle
 
 # Projects
 # For running USA-Nets code
-alias bbolte="rosws && conda activate home_robot_nav && export RUN_DIR=`rospack find agent`/run && export DATA_DIR=`rospack find agent`/data && export MODEL_DIR=`rospack find agent`/model && export KITCHEN_STRETCH_LATEST_DIR=./ros/agent/run/stretch.dataset_kitchen_stretch.train/run_0 && export STRETCH_LAB_LATEST=./ros/agent/run/stretch.dataset_lab_stretch.train/run_0 && export CHESS_STRETCH_LATEST_DIR=`rospack find agent`/run/stretch.dataset_chess_stretch.train/run_0 && export EVAL_RUN_DIR=./run"
+# alias bbolte="rosws && conda activate home_robot_nav && export RUN_DIR=`rospack find agent`/run && export DATA_DIR=`rospack find agent`/data && export MODEL_DIR=`rospack find agent`/model && export KITCHEN_STRETCH_LATEST_DIR=./ros/agent/run/stretch.dataset_kitchen_stretch.train/run_0 && export STRETCH_LAB_LATEST=./ros/agent/run/stretch.dataset_lab_stretch.train/run_0 && export CHESS_STRETCH_LATEST_DIR=`rospack find agent`/run/stretch.dataset_chess_stretch.train/run_0 && export EVAL_RUN_DIR=./run"
 # For setting up RL bench
 alias pyrep="export COPPELIASIM_ROOT=$HOME/src/CoppeliaSim_Player_V4_1_0_Ubuntu20_04 && export LD_LIBRARY_PATH=$COPPELIASIM_ROOT:$LD_LIBRARY_PATH && export QT_QPA_PLATFORM_PLUGIN_PATH=$COPPELIASIM_ROOT"
 # For starting contact graspnet
