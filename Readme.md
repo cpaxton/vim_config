@@ -1,5 +1,8 @@
 # Console Config
 
+From bash, run the [install script](install.sh).
+
+To summarize:
 ```
 sudo apt install build-essential git git-lfs vim-gtk3 byobu
 cd $HOME
