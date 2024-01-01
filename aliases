@@ -19,9 +19,9 @@ alias galactic="source /opt/ros/galactic/setup.bash"
 
 # CUDA configuraiton - set default here
 export CUDA_HOME=/usr/local/cuda
-alias CUDA113="export CUDA_HOME=/usr/local/cuda-11.3 ; ls $CUDA_HOME"
-alias CUDA116="export CUDA_HOME=/usr/local/cuda-11.6 ; ls $CUDA_HOME"
-alias CUDA117="export CUDA_HOME=/usr/local/cuda-11.7 ; ls $CUDA_HOME"
+alias CUDA113="export CUDA_HOME=/usr/local/cuda-11.3 && ls $CUDA_HOME"
+alias CUDA116="export CUDA_HOME=/usr/local/cuda-11.6 && ls $CUDA_HOME"
+alias CUDA117="export CUDA_HOME=/usr/local/cuda-11.7 && ls $CUDA_HOME"
 
 # ROS workspace
 alias rosws="source $HOME/catkin_ws/devel/setup.bash"
