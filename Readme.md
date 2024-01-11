@@ -1,5 +1,13 @@
 # Console Config
 
+Clone the repo:
+```
+git clone git@github.com:cpaxton/vim_config.git .vim --recursive
+```
+
+Then, from bash, run the [install script](install.sh)
+
+Old instructions (what will happen in the script):
 ```
 sudo apt install build-essential git git-lfs vim-gtk3 byobu
 cd $HOME
@@ -15,6 +23,8 @@ source $HOME/.vim/aliases
 ```
 
 Create a new SSH key [following these instructions.](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent)
+
+Use [miniforge](https://github.com/conda-forge/miniforge) to install conda and mamba.
 
 ## Other Stuff - April 2022
 

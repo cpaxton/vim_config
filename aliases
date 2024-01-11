@@ -35,7 +35,6 @@ alias noconda="conda deactivate && conda deactivate"
 # Convenience functions for robotics research
 alias droidlet="cd $HOME/fairo/droidlet/lowlevel/hello_robot/remote && . droidlet/bin/activate"
 
-
 # Projects
 # For running USA-Nets code
 # alias bbolte="rosws && conda activate home_robot_nav && export RUN_DIR=`rospack find agent`/run && export DATA_DIR=`rospack find agent`/data && export MODEL_DIR=`rospack find agent`/model && export KITCHEN_STRETCH_LATEST_DIR=./ros/agent/run/stretch.dataset_kitchen_stretch.train/run_0 && export STRETCH_LAB_LATEST=./ros/agent/run/stretch.dataset_lab_stretch.train/run_0 && export CHESS_STRETCH_LATEST_DIR=`rospack find agent`/run/stretch.dataset_chess_stretch.train/run_0 && export EVAL_RUN_DIR=./run"
@@ -50,3 +49,5 @@ export BLUE_SPOT_IP=10.0.0.10
 alias take_rosmaster="export ROS_MASTER_URI=http://localhost:11311"
 alias rosme="export ROS_MASTER_URI=http://localhost:11311"
 alias spot_ws="conda deactivate && source $HOME/spot_ws/devel/setup.bash && roscd"
+
+alias home_robot="cd ~/src/home-robot; conda activate home-robot"
