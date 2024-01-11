@@ -44,3 +44,9 @@ alias pyrep="export COPPELIASIM_ROOT=$HOME/src/CoppeliaSim_Player_V4_1_0_Ubuntu2
 # For starting contact graspnet
 alias contact_graspnet="cd ~/src/contact_graspnet; conda activate contact_graspnet_env; python contact_graspnet/graspnet_ros_server.py  --local_regions --filter_grasps"
 
+# IP addr for the spot robot
+export BLUE_SPOT_IP=10.0.0.10
+
+alias take_rosmaster="export ROS_MASTER_URI=http://localhost:11311"
+alias rosme="export ROS_MASTER_URI=http://localhost:11311"
+alias spot_ws="conda deactivate && source $HOME/spot_ws/devel/setup.bash && roscd"
