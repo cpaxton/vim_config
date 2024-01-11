@@ -12,6 +12,7 @@ Old instructions (what will happen in the script):
 sudo apt install build-essential git git-lfs vim-gtk3 byobu
 cd $HOME
 git clone git@github.com:cpaxton/vim_config.git .vim --recursive
+git config --global core.editor "vim"
 ln -s $HOME/.vim/vimrc .vimrc
 rm -r .byobu
 ln -s $HOME/.vim/byobu $HOME/.byobu

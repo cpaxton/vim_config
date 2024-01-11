@@ -12,3 +12,6 @@ echo "Setting symbolic links"
 ln -s $HOME/.vim/vimrc .vimrc
 rm -r $HOME/.byobu
 ln -s $HOME/.vim/byobu $HOME/.byobu
+
+# Setup git properly
+git config --global core.editor "vim"
