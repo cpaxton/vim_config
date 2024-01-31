@@ -9,7 +9,7 @@ Then, from bash, run the [install script](install.sh)
 
 Old instructions (what will happen in the script):
 ```
-sudo apt install build-essential git git-lfs vim-gtk3 byobu
+sudo apt install build-essential git git-lfs vim-gtk3 byobu python-is-python3 cmake g++ libpython3.10-dev
 cd $HOME
 git clone git@github.com:cpaxton/vim_config.git .vim --recursive
 git config --global core.editor "vim"
