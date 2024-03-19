@@ -86,16 +86,15 @@ If not, you have a problem.
 #### Cloning the Github Copilot Repo
 
 For neovim, clone with:
-```
+```bash
 git clone https://github.com/github/copilot.vim.git \
   ~/.config/nvim/pack/github/start/copilot.vim
 ```
 
-#### Configuring in NeoVim
+Then you just need to run the follwing command in neovim:
+```
+:Copilot setup
+```
 
-Add to neovim config at `~/.config/nvim/init.vim`:
-```
-set runtimepath^=~/.vim runtimepath+=~/.vim/after
-let &packpath=&runtimepath
-source ~/.vimrc
-```
+Follow instructions to authenticate.
+
