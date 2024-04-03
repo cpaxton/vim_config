@@ -17,4 +17,9 @@ ln -s $HOME/.vim/byobu $HOME/.byobu
 # Setup git properly
 git config --global core.editor "vim"
 
+echo "Update bashrc to use aliases"
 echo "source $HOME/.vim/aliases" >> $HOME/.bashrc
+
+echo "Download miniforge for conda and mamba"
+wget https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh
+sh Miniforge3-Linux-x86_64.sh
