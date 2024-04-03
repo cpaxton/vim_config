@@ -16,3 +16,5 @@ ln -s $HOME/.vim/byobu $HOME/.byobu
 
 # Setup git properly
 git config --global core.editor "vim"
+
+echo "source $HOME/.vim/aliases" >> $HOME/.bashrc
