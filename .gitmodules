@@ -10,3 +10,6 @@
 [submodule "bundle/urdf-vim"]
 	path = bundle/urdf-vim
 	url = git@github.com:PeterMitrano/urdf-vim.git
+[submodule "pack/github/start/copilot.vim"]
+	path = pack/github/start/copilot.vim
+	url = https://github.com/github/copilot.vim.git

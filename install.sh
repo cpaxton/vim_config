@@ -2,7 +2,7 @@
 
 echo "Install basic dependencies..."
 sudo apt update
-sudo apt install -y build-essential git git-lfs vim-gtk3 byobu cmake htop feh python-is-python3 libpython3.10-dev
+sudo apt install -y build-essential git git-lfs vim-gtk3 byobu cmake htop feh python-is-python3 libpython3.10-dev curl
 
 cd $HOME
 rm -r $HOME/.vim
