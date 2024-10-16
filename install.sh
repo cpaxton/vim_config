@@ -33,3 +33,7 @@ git config --global user.email "$USEREMAIL"
 git config pull.rebase false
 
 source ~/.bashrc
+
+$HOME/miniforge3/bin/mamba init
+
+source ~/.bashrc
