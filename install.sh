@@ -7,13 +7,13 @@ sudo apt update
 sudo apt install -y build-essential git git-lfs vim-gtk3 byobu cmake htop feh python-is-python3 libpython3.10-dev curl net-tools
 
 cd $HOME
-rm -r $HOME/.vim
+rm -rf $HOME/.vim
 git clone git@github.com:cpaxton/vim_config.git .vim --recursive
 
 echo "Setting symbolic links"
 rm $HOME/.vimrc
 ln -s $HOME/.vim/vimrc $HOME/.vimrc
-rm -r $HOME/.byobu
+rm -rf $HOME/.byobu
 ln -s $HOME/.vim/byobu $HOME/.byobu
 
 # Setup git properly
