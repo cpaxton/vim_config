@@ -9,6 +9,13 @@ chmod +x install.sh
 ./install.sh
 ```
 
+For older operating systems (Ubuntu 20.04 supported):
+```
+wget https://raw.githubusercontent.com/cpaxton/vim_config/master/install.sh
+chmod +x install.sh
+./install.sh 20
+```
+
 Then in `~/.bashrc` add:
 ```
 source $HOME/.vim/aliases
