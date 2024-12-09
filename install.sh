@@ -2,18 +2,37 @@
 
 set -e
 
+# Set default Ubuntu version to 22
+UBUNTU_VERSION="22"
+PYTHON_DEV_PACKAGE="libpython3.10-dev"
+
+# Check for an optional Ubuntu version flag
+if [ "$1" == "20" ]; then
+    UBUNTU_VERSION="20"
+    PYTHON_DEV_PACKAGE="libpython3.8-dev"
+elif [ "$1" != "" ]; then
+    echo "Invalid argument. Please specify Ubuntu version: 20 or leave blank for 22."
+    exit 1
+fi
+
+echo "Installing for Ubuntu $UBUNTU_VERSION.04..."
+
 echo "Install basic dependencies..."
 sudo apt update
-sudo apt install -y build-essential git git-lfs vim-gtk3 byobu cmake htop feh python-is-python3 libpython3.10-dev curl net-tools
+sudo apt install -y build-essential git git-lfs vim-gtk3 byobu cmake htop feh python-is-python3 $PYTHON_DEV_PACKAGE curl net-tools
 
 cd $HOME
 rm -rf $HOME/.vim
 git clone git@github.com:cpaxton/vim_config.git .vim --recursive
 
 echo "Setting symbolic links"
-rm $HOME/.vimrc
+if [ -f "$HOME/.vimrc" ]; then
+    rm "$HOME/.vimrc"
+fi
 ln -s $HOME/.vim/vimrc $HOME/.vimrc
-rm -rf $HOME/.byobu
+if [ -d "$HOME/.byobu" ]; then
+    rm -rf "$HOME/.byobu"
+fi
 ln -s $HOME/.vim/byobu $HOME/.byobu
 
 # Setup git properly
@@ -37,3 +56,4 @@ source ~/.bashrc
 $HOME/miniforge3/bin/mamba init
 
 source ~/.bashrc
+
