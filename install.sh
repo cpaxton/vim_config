@@ -41,9 +41,29 @@ git config --global core.editor "vim"
 echo "Update bashrc to use aliases"
 echo "source $HOME/.vim/aliases" >> $HOME/.bashrc
 
-echo "Download miniforge for conda and mamba"
-wget https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh
-sh Miniforge3-Linux-x86_64.sh
+echo "Downloading and installing Miniforge for conda and mamba"
+
+# Detect architecture
+if [ "$(uname -m)" = "aarch64" ]; then
+    ARCH="aarch64"
+else
+    ARCH="x86_64"
+fi
+
+# Download the appropriate Miniforge installer
+wget "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-${ARCH}.sh"
+
+# Make the installer executable
+chmod +x "Miniforge3-Linux-${ARCH}.sh"
+
+# Run the installer
+./Miniforge3-Linux-${ARCH}.sh -b
+
+# Clean up the installer
+rm "Miniforge3-Linux-${ARCH}.sh"
+
+echo "Miniforge installation complete. Please restart your shell or run 'source ~/.bashrc' to use conda."
+
 
 read -p "Enter your name for git:" USERNAME
 read -p "Enter your email for git:" USEREMAIL
