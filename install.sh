@@ -35,9 +35,6 @@ if [ -d "$HOME/.byobu" ]; then
 fi
 ln -s $HOME/.vim/byobu $HOME/.byobu
 
-# Setup git properly
-git config --global core.editor "vim"
-
 echo "Update bashrc to use aliases"
 echo "source $HOME/.vim/aliases" >> $HOME/.bashrc
 
@@ -50,6 +47,8 @@ else
     ARCH="x86_64"
 fi
 
+# ----------------------------------------------------------
+# Conda/mamba setup
 # Download the appropriate Miniforge installer
 wget "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-${ARCH}.sh"
 
@@ -64,7 +63,10 @@ rm "Miniforge3-Linux-${ARCH}.sh"
 
 echo "Miniforge installation complete. Please restart your shell or run 'source ~/.bashrc' to use conda."
 
-
+# ----------------------------------------------------------
+# Git setup
+# Setup git properly
+git config --global core.editor "vim"
 read -p "Enter your name for git:" USERNAME
 read -p "Enter your email for git:" USEREMAIL
 git config --global user.name "$USERNAME"
