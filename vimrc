@@ -1,5 +1,6 @@
 set nocompatible              " be iMproved, required
 filetype off                  " required
+set t_ut=
 
 set autoread                                                                                                                                                                                    
 au CursorHold * checktime  
