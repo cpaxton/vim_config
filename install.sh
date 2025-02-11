@@ -2,16 +2,19 @@
 
 set -e
 
-# Set default Ubuntu version to 22
-UBUNTU_VERSION="22"
-PYTHON_DEV_PACKAGE="libpython3.10-dev"
+# Set default Ubuntu version to 24
+UBUNTU_VERSION="24"
+PYTHON_DEV_PACKAGE=""
 
 # Check for an optional Ubuntu version flag
 if [ "$1" == "20" ]; then
     UBUNTU_VERSION="20"
     PYTHON_DEV_PACKAGE="libpython3.8-dev"
+elif [ "$1" == "22"]; then
+    UBUNTU_VERSION="22"
+    PYTHON_DEV_PACKAGE="libpython3.10-dev"
 elif [ "$1" != "" ]; then
-    echo "Invalid argument. Please specify Ubuntu version: 20 or leave blank for 22."
+    echo "Invalid argument. Please specify Ubuntu version: 20, 22 or leave blank for $UBUNTU_VERSION."
     exit 1
 fi
 
