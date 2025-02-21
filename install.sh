@@ -24,6 +24,9 @@ echo "Install basic dependencies..."
 sudo apt update
 sudo apt install -y build-essential git git-lfs vim-gtk3 byobu cmake htop feh python-is-python3 $PYTHON_DEV_PACKAGE curl net-tools
 
+# Install UV
+curl -LsSf https://astral.sh/uv/install.sh | sh 
+
 cd $HOME
 rm -rf $HOME/.vim
 git clone git@github.com:cpaxton/vim_config.git .vim --recursive
