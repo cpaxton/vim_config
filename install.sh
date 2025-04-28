@@ -4,7 +4,7 @@ set -e
 
 # Set default Ubuntu version to 24
 UBUNTU_VERSION="24"
-PYTHON_DEV_PACKAGE="libpython3.12-dev"
+PYTHON_DEV_PACKAGE="libpython3.11-dev"
 
 # Check for an optional Ubuntu version flag
 if [ "$1" == "20" ]; then
