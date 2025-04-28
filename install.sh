@@ -4,7 +4,7 @@ set -e
 
 # Set default Ubuntu version to 24
 UBUNTU_VERSION="24"
-PYTHON_DEV_PACKAGE=""
+PYTHON_DEV_PACKAGE="libpython3.11-dev"
 
 # Check for an optional Ubuntu version flag
 if [ "$1" == "20" ]; then
@@ -77,7 +77,7 @@ read -p "Enter your name for git:" USERNAME
 read -p "Enter your email for git:" USEREMAIL
 git config --global user.name "$USERNAME"
 git config --global user.email "$USEREMAIL"
-git config pull.rebase false
+git config --global pull.rebase false
 
 source ~/.bashrc
 
