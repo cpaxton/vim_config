@@ -53,3 +53,6 @@ alias spot_ws="conda deactivate && source $HOME/spot_ws/devel/setup.bash && rosc
 
 alias home_robot="cd ~/src/home-robot; conda activate home-robot"
 alias home_engine="cd ~/src/home-engine; conda activate home_engine; CUDA118"
+
+alias home_virgil="rsb && cd ~/src/virgil && conda activate virgil"
+alias rsv=home_virgil
