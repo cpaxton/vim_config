@@ -56,3 +56,5 @@ alias home_engine="cd ~/src/home-engine; conda activate home_engine; CUDA118"
 
 alias home_virgil="rsb && cd ~/src/virgil && conda activate virgil"
 alias rsv=home_virgil
+
+alias suv="source .venv/bin/activate"
