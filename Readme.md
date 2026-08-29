@@ -1,27 +1,38 @@
 # Console Config
 
-To setup a new computer, create a new SSH key [following these instructions.](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent)
+Download and run the [install script](install.sh) on a new computer or robot:
 
-Then just download and run the [install script](install.sh)
 ```
 wget https://raw.githubusercontent.com/cpaxton/vim_config/master/install.sh
 chmod +x install.sh
 ./install.sh
 ```
 
-For older operating systems (Ubuntu 20.04 supported):
+On a terminal, a **checklist / menu** walks you through git name, optional CLI agents, and the SSH key. Ubuntu 20.04 / 22.04 / 24.04 is auto-detected (or pass `20`, `22`, or `24`). Flags skip those screens:
+
 ```
-wget https://raw.githubusercontent.com/cpaxton/vim_config/master/install.sh
-chmod +x install.sh
-./install.sh 20
+./install.sh --cursor              # Cursor CLI
+./install.sh --opencode            # OpenCode
+./install.sh --claude              # Claude Code
+./install.sh --agents              # all of the above
+./install.sh 22 --cursor --opencode
+./install.sh --no-agents           # skip agents
+./install.sh --no-dialog          # plain prompts instead of menus
+./install.sh -y --no-agents       # non-interactive (robots)
 ```
 
-Then in `~/.bashrc` add:
+The script installs packages, vim/byobu, git, uv, and miniforge (conda/mamba). It also:
+
+- Clones this repo over **HTTPS** so a new machine does not need a GitHub SSH key yet. Submodules (Vundle, YouCompleteMe, …) are also fetched over HTTPS. `vim-gtk3` may print `update-alternatives` man-page warnings; those are harmless.
+- Generates an SSH key if none exists (ed25519, [GitHub's recommended flow](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent)), shows the public key, and lets you add it at [GitHub SSH keys](https://github.com/settings/ssh/new) (or skip and add later). If GitHub accepts the key, `origin` is switched to SSH. Leave the passphrase empty on robots so `git pull` is non-interactive.
+
+After install, `~/.bashrc` sources `$HOME/.vim/aliases` (the script appends this if it is missing). Restart the shell or run:
+
 ```
-source $HOME/.vim/aliases
+source $HOME/.bashrc
 ```
 
-Use [miniforge](https://github.com/conda-forge/miniforge) to install conda and mamba.
+Use [miniforge](https://github.com/conda-forge/miniforge) to install conda and mamba if you are not using `install.sh`.
 
 
 ### Github copilot
