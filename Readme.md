@@ -17,7 +17,7 @@ On a terminal, a **checklist / menu** walks you through git name, optional CLI a
 ./install.sh --agents              # all of the above
 ./install.sh 22 --cursor --opencode
 ./install.sh --no-agents           # skip agents
-./install.sh --no-dialog          # plain prompts instead of menus
+./install.sh --no-dialog           # plain prompts instead of menus
 ./install.sh -y --no-agents       # non-interactive (robots)
 ```
 

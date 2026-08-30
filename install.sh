@@ -289,7 +289,7 @@ if [ "$NONINTERACTIVE" != true ]; then
     if [ "$USE_DIALOG" = true ]; then
         dialog_msg "Welcome" \
             "This sets up a new computer or robot:\n\n  • packages, vim, byobu, git, uv, miniforge\n  • SSH key if missing (optional GitHub add)\n  • optional CLI agents (Cursor, OpenCode, Claude)\n\nYou will pick options on the next screens." \
-            16 72
+            16 72 || cancelled
     fi
 
     if [ -z "$UBUNTU_VERSION" ]; then
@@ -497,7 +497,11 @@ if [ "$INSTALL_CLAUDE" = true ]; then
 fi
 
 step "Installing UV"
-curl -LsSf https://astral.sh/uv/install.sh | sh
+if command -v uv >/dev/null 2>&1 || [ -x "$HOME/.local/bin/uv" ]; then
+    echo "UV already installed, skipping."
+else
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+fi
 
 step "Cloning vim_config over HTTPS"
 VIM_CLONE_TMP="$(mktemp -d "${TMPDIR:-/tmp}/vim_config.XXXXXX")"
@@ -529,17 +533,21 @@ if ! grep -q '\.vim/aliases' "$HOME/.bashrc" 2>/dev/null; then
 fi
 
 step "Installing Miniforge (conda / mamba)"
-if [ "$(uname -m)" = "aarch64" ]; then
-    ARCH="aarch64"
+if [ -x "$HOME/miniforge3/bin/mamba" ]; then
+    echo "Miniforge already installed, skipping download."
 else
-    ARCH="x86_64"
+    if [ "$(uname -m)" = "aarch64" ]; then
+        ARCH="aarch64"
+    else
+        ARCH="x86_64"
+    fi
+    MF_INSTALLER="$(mktemp "${TMPDIR:-/tmp}/Miniforge3.XXXXXX.sh")"
+    wget -O "$MF_INSTALLER" \
+        "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-${ARCH}.sh"
+    chmod +x "$MF_INSTALLER"
+    bash "$MF_INSTALLER" -b
+    rm -f "$MF_INSTALLER"
 fi
-
-cd "$HOME"
-wget "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-${ARCH}.sh"
-chmod +x "Miniforge3-Linux-${ARCH}.sh"
-./Miniforge3-Linux-${ARCH}.sh -b
-rm "Miniforge3-Linux-${ARCH}.sh"
 
 set +e
 source "$HOME/.bashrc"

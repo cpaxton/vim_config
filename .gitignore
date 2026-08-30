@@ -1,2 +1,5 @@
 *.swp
 .ssh-agent
+.netrwhist
+*.tar.gz
+
