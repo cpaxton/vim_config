@@ -123,8 +123,9 @@ install_codex() {
 python_dev_package() {
     local version=""
 
-    if command -v python3 >/dev/null 2>&1; then
-        version="$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")' 2>/dev/null || true)"
+    # Use the system Python, not a conda/venv Python that may be on PATH.
+    if [[ -x /usr/bin/python3 ]]; then
+        version="$(/usr/bin/python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")' 2>/dev/null || true)"
     fi
 
     if [[ -z "$version" ]]; then
@@ -162,7 +163,11 @@ setup_base() {
     local python_dev
     python_dev="$(python_dev_package)"
     if [[ -n "$python_dev" ]]; then
-        packages+=("$python_dev")
+        if apt-cache show "$python_dev" >/dev/null 2>&1; then
+            packages+=("$python_dev")
+        else
+            info "Skipping $python_dev (not available for Ubuntu $UBUNTU_VERSION)"
+        fi
     fi
     sudo apt install -y "${packages[@]}"
 
@@ -287,6 +292,9 @@ if ((APPS_ONLY)) && ((${#SELECTED[@]} == 0)); then
 fi
 
 if ((APPS_ONLY == 0)); then
+    if [[ -d "$INSTALL_DIR/.git" ]] && ((${#SELECTED[@]})); then
+        info "Config already exists; running setup too (use --apps-only to skip it)"
+    fi
     setup_base
 fi
 
