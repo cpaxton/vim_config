@@ -32,10 +32,14 @@ Run `./install.sh --list` to see the available apps. Currently:
 | App | Installed from |
 | --- | --- |
 | `discord` | Official Discord `.deb` |
-| `dropbox` | Latest Ubuntu `.deb` from Dropbox |
+| `dropbox` | Latest official package, or Dropbox's daemon tarball on older Ubuntu |
 | `obsidian` | Latest GitHub release |
 | `opencode` | Official v2 installer |
 | `codex` | Official Codex CLI installer |
+
+On Ubuntu 22.04 and older, Dropbox's current `.deb` requires GTK 4.8+, which those
+releases do not ship. The installer uses Dropbox's official daemon tarball in that
+case and installs the current CLI under `/usr/local/bin`.
 
 Install specific apps alongside the base config:
 

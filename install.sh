@@ -83,18 +83,129 @@ install_discord() {
     install_deb "https://discord.com/api/download?platform=linux&format=deb"
 }
 
-install_dropbox() {
-    info "Installing Dropbox"
-    local pkg
-    pkg="$(curl -fsSL https://linux.dropbox.com/packages/ubuntu/ \
+latest_dropbox_deb() {
+    curl -fsSL https://linux.dropbox.com/packages/ubuntu/ \
         | grep -oE 'dropbox_[0-9.]+_amd64\.deb' \
         | sort -Vu \
-        | tail -n1)"
+        | tail -n1
+}
+
+dropbox_deb_compatible() {
+    local gtk4
+    gtk4="$(apt-cache policy libgtk-4-1 2>/dev/null | awk '/Candidate:/ { print $2 }')"
+    if [[ -z "$gtk4" || "$gtk4" == "(none)" ]]; then
+        return 1
+    fi
+    dpkg --compare-versions "$gtk4" ge "4.8.0"
+}
+
+disable_dropbox_repo() {
+    local source_list="/etc/apt/sources.list.d/dropbox.list"
+    if [[ -f "$source_list" ]] && grep -q 'linux.dropbox.com' "$source_list"; then
+        info "Disabling stale Dropbox apt repository"
+        sudo sed -i '/linux\.dropbox\.com/ s/^deb/# deb/' "$source_list"
+    fi
+    if [[ ! -e /etc/default/dropbox-repo ]]; then
+        echo "# Dropbox is installed from the official package or tarball; keep the stale apt repo disabled." |
+            sudo tee /etc/default/dropbox-repo >/dev/null
+    fi
+}
+
+install_dropbox_cli() {
+    local pkg="$1" tmpdir icon size dep
+    local deps=()
+
+    for dep in python3-gi gir1.2-gtk-3.0 gir1.2-gdkpixbuf-2.0 gir1.2-glib-2.0 gir1.2-pango-1.0 lsb-release; do
+        dpkg -s "$dep" >/dev/null 2>&1 || deps+=("$dep")
+    done
+    if ((${#deps[@]})); then
+        info "Installing Dropbox CLI dependencies"
+        sudo apt update
+        sudo apt install -y "${deps[@]}"
+    fi
+
+    tmpdir="$(mktemp -d)"
+
+    info "Downloading the current Dropbox CLI"
+    curl -fL --progress-bar -o "$tmpdir/dropbox.deb" \
+        "https://linux.dropbox.com/packages/ubuntu/$pkg"
+    dpkg-deb -x "$tmpdir/dropbox.deb" "$tmpdir/extract"
+
+    # The packaged script uses /usr/bin/env python3, which can pick up a
+    # conda/venv Python that does not have the system gi bindings.
+    sed '1s|^#!/usr/bin/env python3|#!/usr/bin/python3|' \
+        "$tmpdir/extract/usr/bin/dropbox" |
+        sudo tee /usr/local/bin/dropbox >/dev/null
+    sudo chmod 0755 /usr/local/bin/dropbox
+
+    if [[ -f "$tmpdir/extract/usr/share/applications/dropbox.desktop" ]]; then
+        sudo install -Dm0644 "$tmpdir/extract/usr/share/applications/dropbox.desktop" \
+            /usr/local/share/applications/dropbox.desktop
+    fi
+    for icon in "$tmpdir"/extract/usr/share/icons/hicolor/*/apps/dropbox.png; do
+        [[ -f "$icon" ]] || continue
+        size="$(basename "$(dirname "$(dirname "$icon")")")"
+        sudo install -Dm0644 "$icon" "/usr/local/share/icons/hicolor/$size/apps/dropbox.png"
+    done
+    if command -v gtk-update-icon-cache >/dev/null 2>&1; then
+        sudo gtk-update-icon-cache -q -t -f /usr/local/share/icons/hicolor 2>/dev/null || true
+    fi
+
+    rm -rf "$tmpdir"
+}
+
+install_dropbox_tarball() {
+    local pkg="$1" tmpdir was_running=0
+
+    tmpdir="$(mktemp -d)"
+    info "Downloading the latest Dropbox daemon"
+    curl -fL --progress-bar -o "$tmpdir/dropbox.tar.gz" \
+        "https://www.dropbox.com/download?plat=lnx.x86_64"
+    tar xzf "$tmpdir/dropbox.tar.gz" -C "$tmpdir"
+
+    if pgrep -f "^$HOME/\.dropbox-dist/.*/dropbox$" >/dev/null 2>&1; then
+        was_running=1
+        info "Stopping the running Dropbox daemon"
+        pkill -f "^$HOME/\.dropbox-dist/.*/dropbox$" 2>/dev/null || true
+        sleep 1
+    fi
+
+    mkdir -p "$HOME/.dropbox-dist"
+    cp -a "$tmpdir/.dropbox-dist/." "$HOME/.dropbox-dist/"
+    rm -rf "$tmpdir"
+
+    install_dropbox_cli "$pkg"
+
+    if ((was_running)); then
+        if [[ -f "$HOME/.dropbox/info.json" ]]; then
+            info "Restarting Dropbox"
+            timeout 20 /usr/local/bin/dropbox start >/dev/null 2>&1 || true
+        else
+            info "Dropbox was stopped for the update; start it with 'dropbox start -i'."
+        fi
+    else
+        info "Dropbox installed. Run 'dropbox start -i' to sign in and start it."
+    fi
+}
+
+install_dropbox() {
+    info "Installing Dropbox"
+    disable_dropbox_repo
+
+    local pkg
+    pkg="$(latest_dropbox_deb)"
     if [[ -z "$pkg" ]]; then
         echo "Could not find the latest Dropbox package." >&2
         return 1
     fi
-    install_deb "https://linux.dropbox.com/packages/ubuntu/$pkg"
+
+    if dropbox_deb_compatible; then
+        install_deb "https://linux.dropbox.com/packages/ubuntu/$pkg"
+        info "Dropbox installed. Run 'dropbox start -i' if it is not already running."
+    else
+        info "The current Dropbox .deb needs GTK 4.8+; using Dropbox's official tarball instead"
+        install_dropbox_tarball "$pkg"
+    fi
 }
 
 install_obsidian() {
