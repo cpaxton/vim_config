@@ -4,13 +4,19 @@ Bootstrap an Ubuntu machine with my vim config, shell aliases, byobu setup, mini
 
 ## Fresh install
 
-1. Create a new SSH key [following these instructions](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent). The installer clones the config over SSH.
+1. Create a new SSH key [following these instructions](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent). The installer clones the config over SSH by default. If you don't want to set up a key, set `REPO_URL` to the HTTPS URL when running the installer.
 2. Download and run the [install script](install.sh):
 
 ```bash
 wget https://raw.githubusercontent.com/cpaxton/vim_config/master/install.sh
 chmod +x install.sh
 ./install.sh
+```
+
+To clone over HTTPS instead of SSH:
+
+```bash
+REPO_URL=https://github.com/cpaxton/vim_config.git ./install.sh
 ```
 
 The Ubuntu version is detected automatically. For older releases, pass it explicitly (20.04 is supported):
@@ -31,6 +37,7 @@ Run `./install.sh --list` to see the available apps. Currently:
 
 | App | Installed from |
 | --- | --- |
+| `uv` | Astral's official installer (also part of the base setup) |
 | `discord` | Official Discord `.deb` |
 | `dropbox` | Latest official package, or Dropbox's daemon tarball on older Ubuntu |
 | `obsidian` | Latest GitHub release |
@@ -50,8 +57,11 @@ Install specific apps alongside the base config:
 If the config is already set up and you only want the apps, skip the base setup:
 
 ```bash
+./install.sh --apps-only uv
 ./install.sh --apps-only codex
 ```
+
+For unattended runs, set `GIT_NAME` and `GIT_EMAIL`; the installer skips the git identity prompts when stdin is not a terminal.
 
 ## Options
 

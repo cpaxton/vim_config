@@ -2,8 +2,17 @@
 
 set -eo pipefail
 
-REPO_URL="git@github.com:cpaxton/vim_config.git"
-INSTALL_DIR="$HOME/.vim"
+REPO_URL="${REPO_URL:-git@github.com:cpaxton/vim_config.git}"
+INSTALL_DIR="${INSTALL_DIR:-$HOME/.vim}"
+
+TEMP_PATHS=()
+cleanup() {
+    local path
+    for path in "${TEMP_PATHS[@]}"; do
+        [[ -n "$path" ]] && rm -rf "$path"
+    done
+}
+trap cleanup EXIT
 
 detect_ubuntu_version() {
     local version_id=""
@@ -19,8 +28,35 @@ detect_ubuntu_version() {
 
 UBUNTU_VERSION="$(detect_ubuntu_version)"
 
-APP_ORDER=(discord dropbox obsidian opencode codex)
+if [[ "$(uname -s)" != "Linux" ]]; then
+    echo "This installer targets Ubuntu Linux; detected $(uname -s)." >&2
+    exit 1
+fi
+
+if [[ -r /etc/os-release ]]; then
+    . /etc/os-release
+    if [[ "${ID:-}" != "ubuntu" ]]; then
+        echo "warning: this installer targets Ubuntu; detected ${PRETTY_NAME:-${ID:-unknown}}." >&2
+    fi
+fi
+
+detect_arch() {
+    case "$(uname -m)" in
+        x86_64) printf 'amd64\n' ;;
+        aarch64 | arm64) printf 'arm64\n' ;;
+        *) uname -m ;;
+    esac
+}
+ARCH="$(detect_arch)"
+
+GIT_REPO_CONFIG=()
+if [[ "$REPO_URL" == https://* ]]; then
+    GIT_REPO_CONFIG=(-c "url.https://github.com/.insteadOf=git@github.com:")
+fi
+
+APP_ORDER=(uv discord dropbox obsidian opencode codex)
 declare -A APP_INSTALL=(
+    [uv]=install_uv
     [discord]=install_discord
     [dropbox]=install_dropbox
     [obsidian]=install_obsidian
@@ -30,6 +66,7 @@ declare -A APP_INSTALL=(
 
 list_apps() {
     cat <<'EOF'
+uv         uv Python package manager (also installed by the base setup)
 discord    Discord desktop client
 dropbox    Dropbox desktop client
 obsidian   Obsidian notes (latest .deb from GitHub)
@@ -61,6 +98,7 @@ Examples:
   ./install.sh 22                       # config for Ubuntu 22.04
   ./install.sh discord obsidian         # config + those apps
   ./install.sh --all                    # config + every app
+  ./install.sh --apps-only uv           # just install uv
   ./install.sh --apps-only codex        # just install Codex
 EOF
 }
@@ -70,17 +108,29 @@ info() {
 }
 
 install_deb() {
-    local url="$1" deb
+    local url="$1" deb deb_arch
     deb="$(mktemp --suffix=.deb)"
+    TEMP_PATHS+=("$deb")
     info "Downloading $url"
-    curl -fL --progress-bar -o "$deb" "$url"
-    sudo apt-get install -y "$deb"
+    curl -fL --progress-bar -o "$deb" "$url" || return 1
+
+    deb_arch="$(dpkg-deb -f "$deb" Architecture 2>/dev/null || true)"
+    if [[ -n "$deb_arch" && "$deb_arch" != "$ARCH" && "$deb_arch" != all ]]; then
+        echo "Downloaded package is for $deb_arch, but this machine is $ARCH." >&2
+        return 1
+    fi
+
+    sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y "$deb" || return 1
     rm -f "$deb"
 }
 
 install_discord() {
     info "Installing Discord"
-    install_deb "https://discord.com/api/download?platform=linux&format=deb"
+    if [[ "$ARCH" != amd64 ]]; then
+        echo "Discord's Linux .deb is x86_64-only (detected $ARCH)." >&2
+        return 1
+    fi
+    install_deb "https://discord.com/api/download?platform=linux&format=deb" || return 1
 }
 
 latest_dropbox_deb() {
@@ -101,13 +151,20 @@ dropbox_deb_compatible() {
 
 disable_dropbox_repo() {
     local source_list="/etc/apt/sources.list.d/dropbox.list"
-    if [[ -f "$source_list" ]] && grep -q 'linux.dropbox.com' "$source_list"; then
+    if [[ -f "$source_list" ]] && grep -qE '^[[:space:]]*deb[[:space:]].*linux\.dropbox\.com' "$source_list"; then
         info "Disabling stale Dropbox apt repository"
         sudo sed -i '/linux\.dropbox\.com/ s/^deb/# deb/' "$source_list"
     fi
     if [[ ! -e /etc/default/dropbox-repo ]]; then
         echo "# Dropbox is installed from the official package or tarball; keep the stale apt repo disabled." |
             sudo tee /etc/default/dropbox-repo >/dev/null
+    fi
+}
+
+disable_stale_dropbox_repo() {
+    local source_list="/etc/apt/sources.list.d/dropbox.list"
+    if [[ -f "$source_list" ]] && grep -qE '^[[:space:]]*deb[[:space:]].*linux\.dropbox\.com' "$source_list"; then
+        disable_dropbox_repo
     fi
 }
 
@@ -120,32 +177,36 @@ install_dropbox_cli() {
     done
     if ((${#deps[@]})); then
         info "Installing Dropbox CLI dependencies"
-        sudo apt update
-        sudo apt install -y "${deps[@]}"
+        disable_stale_dropbox_repo || return 1
+        sudo apt update || return 1
+        sudo apt install -y "${deps[@]}" || return 1
     fi
 
     tmpdir="$(mktemp -d)"
+    TEMP_PATHS+=("$tmpdir")
 
     info "Downloading the current Dropbox CLI"
     curl -fL --progress-bar -o "$tmpdir/dropbox.deb" \
-        "https://linux.dropbox.com/packages/ubuntu/$pkg"
-    dpkg-deb -x "$tmpdir/dropbox.deb" "$tmpdir/extract"
+        "https://linux.dropbox.com/packages/ubuntu/$pkg" || return 1
+    dpkg-deb -x "$tmpdir/dropbox.deb" "$tmpdir/extract" || return 1
 
     # The packaged script uses /usr/bin/env python3, which can pick up a
     # conda/venv Python that does not have the system gi bindings.
     sed '1s|^#!/usr/bin/env python3|#!/usr/bin/python3|' \
         "$tmpdir/extract/usr/bin/dropbox" |
-        sudo tee /usr/local/bin/dropbox >/dev/null
-    sudo chmod 0755 /usr/local/bin/dropbox
+        sudo tee /usr/local/bin/dropbox >/dev/null || return 1
+    sudo chmod 0755 /usr/local/bin/dropbox || return 1
 
     if [[ -f "$tmpdir/extract/usr/share/applications/dropbox.desktop" ]]; then
+        # The Dropbox CLI hardcodes this path when creating its autostart entry.
+        sudo rm -f /usr/local/share/applications/dropbox.desktop
         sudo install -Dm0644 "$tmpdir/extract/usr/share/applications/dropbox.desktop" \
-            /usr/local/share/applications/dropbox.desktop
+            /usr/share/applications/dropbox.desktop || return 1
     fi
     for icon in "$tmpdir"/extract/usr/share/icons/hicolor/*/apps/dropbox.png; do
         [[ -f "$icon" ]] || continue
         size="$(basename "$(dirname "$(dirname "$icon")")")"
-        sudo install -Dm0644 "$icon" "/usr/local/share/icons/hicolor/$size/apps/dropbox.png"
+        sudo install -Dm0644 "$icon" "/usr/local/share/icons/hicolor/$size/apps/dropbox.png" || return 1
     done
     if command -v gtk-update-icon-cache >/dev/null 2>&1; then
         sudo gtk-update-icon-cache -q -t -f /usr/local/share/icons/hicolor 2>/dev/null || true
@@ -158,10 +219,11 @@ install_dropbox_tarball() {
     local pkg="$1" tmpdir was_running=0
 
     tmpdir="$(mktemp -d)"
+    TEMP_PATHS+=("$tmpdir")
     info "Downloading the latest Dropbox daemon"
     curl -fL --progress-bar -o "$tmpdir/dropbox.tar.gz" \
-        "https://www.dropbox.com/download?plat=lnx.x86_64"
-    tar xzf "$tmpdir/dropbox.tar.gz" -C "$tmpdir"
+        "https://www.dropbox.com/download?plat=lnx.x86_64" || return 1
+    tar xzf "$tmpdir/dropbox.tar.gz" -C "$tmpdir" || return 1
 
     if pgrep -f "^$HOME/\.dropbox-dist/.*/dropbox$" >/dev/null 2>&1; then
         was_running=1
@@ -170,11 +232,13 @@ install_dropbox_tarball() {
         sleep 1
     fi
 
-    mkdir -p "$HOME/.dropbox-dist"
-    cp -a "$tmpdir/.dropbox-dist/." "$HOME/.dropbox-dist/"
+    # Replace the daemon tree so old version directories do not accumulate.
+    rm -rf "$HOME/.dropbox-dist" || return 1
+    mkdir -p "$HOME/.dropbox-dist" || return 1
+    cp -a "$tmpdir/.dropbox-dist/." "$HOME/.dropbox-dist/" || return 1
     rm -rf "$tmpdir"
 
-    install_dropbox_cli "$pkg"
+    install_dropbox_cli "$pkg" || return 1
 
     if ((was_running)); then
         if [[ -f "$HOME/.dropbox/info.json" ]]; then
@@ -190,35 +254,52 @@ install_dropbox_tarball() {
 
 install_dropbox() {
     info "Installing Dropbox"
-    disable_dropbox_repo
+    if [[ "$ARCH" != amd64 ]]; then
+        echo "Dropbox's Linux client is x86_64-only (detected $ARCH)." >&2
+        return 1
+    fi
+
+    disable_dropbox_repo || return 1
 
     local pkg
-    pkg="$(latest_dropbox_deb)"
+    if ! pkg="$(latest_dropbox_deb)"; then
+        echo "Could not fetch or find the latest Dropbox package." >&2
+        return 1
+    fi
     if [[ -z "$pkg" ]]; then
         echo "Could not find the latest Dropbox package." >&2
         return 1
     fi
 
     if dropbox_deb_compatible; then
-        install_deb "https://linux.dropbox.com/packages/ubuntu/$pkg"
+        install_deb "https://linux.dropbox.com/packages/ubuntu/$pkg" || return 1
         info "Dropbox installed. Run 'dropbox start -i' if it is not already running."
     else
         info "The current Dropbox .deb needs GTK 4.8+; using Dropbox's official tarball instead"
-        install_dropbox_tarball "$pkg"
+        install_dropbox_tarball "$pkg" || return 1
     fi
 }
 
 install_obsidian() {
     info "Installing Obsidian"
+    if [[ "$ARCH" != amd64 ]]; then
+        echo "Obsidian's .deb is amd64-only (detected $ARCH). Use the AppImage from GitHub instead." >&2
+        return 1
+    fi
+
     local url
-    url="$(curl -fsSL https://api.github.com/repos/obsidianmd/obsidian-releases/releases/latest \
-        | grep -oE 'https://[^"]+_amd64\.deb' \
-        | sed -n '1p')"
+    if ! url="$(curl -fsSL https://api.github.com/repos/obsidianmd/obsidian-releases/releases/latest \
+        | grep -oE '"browser_download_url"[[:space:]]*:[[:space:]]*"[^"]+_amd64\.deb"' \
+        | sed -E 's/.*"(https:[^"]+)".*/\1/' \
+        | sed -n '1p')"; then
+        echo "Could not fetch the latest Obsidian release." >&2
+        return 1
+    fi
     if [[ -z "$url" ]]; then
         echo "Could not find the latest Obsidian release." >&2
         return 1
     fi
-    install_deb "$url"
+    install_deb "$url" || return 1
 }
 
 install_opencode() {
@@ -229,6 +310,26 @@ install_opencode() {
 install_codex() {
     info "Installing Codex CLI"
     curl -fsSL https://chatgpt.com/codex/install.sh | sh
+}
+
+install_uv() {
+    local bin_dir="${XDG_BIN_HOME:-$HOME/.local/bin}"
+    export PATH="$bin_dir:$PATH"
+
+    if command -v uv >/dev/null 2>&1; then
+        if ((APPS_ONLY)); then
+            info "uv is already installed ($(uv --version 2>/dev/null || echo 'unknown version'))"
+        fi
+        return 0
+    fi
+
+    info "Installing uv"
+    curl -LsSf https://astral.sh/uv/install.sh | sh || return 1
+    if ! command -v uv >/dev/null 2>&1; then
+        echo "uv was installed but is not on PATH. Add $bin_dir to PATH." >&2
+        return 1
+    fi
+    info "Installed $(uv --version)"
 }
 
 python_dev_package() {
@@ -252,9 +353,48 @@ python_dev_package() {
     printf 'libpython%s-dev\n' "$version"
 }
 
+require_command() {
+    local cmd="$1"
+    if ! command -v "$cmd" >/dev/null 2>&1; then
+        echo "Missing required command: $cmd" >&2
+        return 1
+    fi
+}
+
+preflight_apps() {
+    require_command curl || return 1
+
+    local needs_apt=0 app
+    for app in "${SELECTED[@]}"; do
+        case "$app" in
+            discord | dropbox | obsidian) needs_apt=1 ;;
+        esac
+    done
+
+    if ((needs_apt)); then
+        require_command sudo || return 1
+        require_command apt-get || return 1
+        disable_stale_dropbox_repo
+        sudo apt update
+    fi
+}
+
+check_repo_access() {
+    if [[ -d "$INSTALL_DIR/.git" ]]; then
+        return 0
+    fi
+
+    if ! git "${GIT_REPO_CONFIG[@]}" ls-remote "$REPO_URL" HEAD >/dev/null 2>&1; then
+        echo "Could not access $REPO_URL." >&2
+        echo "Check your SSH key, or run with REPO_URL=https://github.com/cpaxton/vim_config.git" >&2
+        return 1
+    fi
+}
+
 setup_base() {
     info "Installing for Ubuntu $UBUNTU_VERSION"
     info "Installing basic dependencies"
+    disable_stale_dropbox_repo
     sudo apt update
 
     local packages=(
@@ -268,6 +408,8 @@ setup_base() {
         feh
         python-is-python3
         curl
+        wget
+        xclip
         net-tools
         unzip
     )
@@ -282,34 +424,39 @@ setup_base() {
     fi
     sudo apt install -y "${packages[@]}"
 
-    if ! command -v uv >/dev/null 2>&1; then
-        info "Installing uv"
-        curl -LsSf https://astral.sh/uv/install.sh | sh
-    fi
+    info "Checking repository access"
+    check_repo_access
+
+    install_uv
 
     info "Cloning the config"
     if [[ -d "$INSTALL_DIR/.git" ]]; then
         info "$INSTALL_DIR already exists, updating it"
         git -C "$INSTALL_DIR" pull --ff-only ||
             echo "warning: could not fast-forward $INSTALL_DIR, leaving it as is"
-        git -C "$INSTALL_DIR" submodule update --init --recursive
+        git -C "$INSTALL_DIR" "${GIT_REPO_CONFIG[@]}" submodule update --init --recursive
     else
         if [[ -e "$INSTALL_DIR" ]]; then
             mv "$INSTALL_DIR" "$INSTALL_DIR.bak.$(date +%s)"
         fi
-        git clone --recursive "$REPO_URL" "$INSTALL_DIR"
+        git "${GIT_REPO_CONFIG[@]}" clone --recursive "$REPO_URL" "$INSTALL_DIR"
     fi
 
     info "Setting symbolic links"
+    if [[ -e "$HOME/.vimrc" && ! -L "$HOME/.vimrc" ]]; then
+        mv "$HOME/.vimrc" "$HOME/.vimrc.bak.$(date +%s)"
+    fi
     ln -sfn "$INSTALL_DIR/vimrc" "$HOME/.vimrc"
     if [[ -e "$HOME/.byobu" && ! -L "$HOME/.byobu" ]]; then
         mv "$HOME/.byobu" "$HOME/.byobu.bak.$(date +%s)"
     fi
     ln -sfn "$INSTALL_DIR/byobu" "$HOME/.byobu"
 
-    if ! grep -qF "source $INSTALL_DIR/aliases" "$HOME/.bashrc" 2>/dev/null; then
+    local aliases_line
+    aliases_line="$(printf 'source %q' "$INSTALL_DIR/aliases")"
+    if ! grep -qF "$aliases_line" "$HOME/.bashrc" 2>/dev/null; then
         info "Adding aliases to ~/.bashrc"
-        echo "source $INSTALL_DIR/aliases" >>"$HOME/.bashrc"
+        printf '%s\n' "$aliases_line" >>"$HOME/.bashrc"
     fi
 
     if [[ ! -d "$HOME/miniforge3" ]]; then
@@ -319,6 +466,7 @@ setup_base() {
         fi
 
         local installer="$HOME/Miniforge3-Linux-${arch}.sh"
+        TEMP_PATHS+=("$installer")
         info "Downloading miniforge for conda and mamba"
         curl -fL -o "$installer" \
             "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-${arch}.sh"
@@ -329,23 +477,35 @@ setup_base() {
     # Setup git properly
     git config --global core.editor "vim"
     if [[ -z "$(git config --global user.name)" ]]; then
-        read -rp "Enter your name for git: " USERNAME
-        git config --global user.name "$USERNAME"
+        if [[ -n "${GIT_NAME:-}" ]]; then
+            git config --global user.name "$GIT_NAME"
+        elif [[ -t 0 ]]; then
+            local git_name
+            read -rp "Enter your name for git: " git_name
+            git config --global user.name "$git_name"
+        else
+            echo "warning: git user.name is not set. Run: git config --global user.name 'Your Name'" >&2
+        fi
     fi
     if [[ -z "$(git config --global user.email)" ]]; then
-        read -rp "Enter your email for git: " USEREMAIL
-        git config --global user.email "$USEREMAIL"
+        if [[ -n "${GIT_EMAIL:-}" ]]; then
+            git config --global user.email "$GIT_EMAIL"
+        elif [[ -t 0 ]]; then
+            local git_email
+            read -rp "Enter your email for git: " git_email
+            git config --global user.email "$git_email"
+        else
+            echo "warning: git user.email is not set. Run: git config --global user.email 'you@example.com'" >&2
+        fi
     fi
     git config --global pull.rebase false
     git config --global push.autoSetupRemote true
 
-    source "$HOME/.bashrc"
+    export PATH="$HOME/.local/bin:$HOME/miniforge3/bin:$PATH"
 
     if [[ -x "$HOME/miniforge3/bin/mamba" ]]; then
         "$HOME/miniforge3/bin/mamba" init
     fi
-
-    source "$HOME/.bashrc"
 }
 
 SELECTED=()
@@ -402,6 +562,10 @@ if ((APPS_ONLY)) && ((${#SELECTED[@]} == 0)); then
     exit 1
 fi
 
+if ((APPS_ONLY)); then
+    preflight_apps
+fi
+
 if ((APPS_ONLY == 0)); then
     if [[ -d "$INSTALL_DIR/.git" ]] && ((${#SELECTED[@]})); then
         info "Config already exists; running setup too (use --apps-only to skip it)"
@@ -409,12 +573,28 @@ if ((APPS_ONLY == 0)); then
     setup_base
 fi
 
+failed_apps=()
 for app in "${SELECTED[@]}"; do
-    "${APP_INSTALL[$app]}"
+    # The base setup already installs uv; do not run it twice.
+    if [[ "$app" == "uv" ]] && ((APPS_ONLY == 0)); then
+        continue
+    fi
+    if ! "${APP_INSTALL[$app]}"; then
+        failed_apps+=("$app")
+    fi
 done
+
+if ((${#failed_apps[@]})); then
+    echo "Failed to install: ${failed_apps[*]}" >&2
+    exit 1
+fi
 
 if ((${#SELECTED[@]})); then
     info "Done. Installed: ${SELECTED[*]}"
 else
     info "Done."
+fi
+
+if ((APPS_ONLY == 0)); then
+    info "Restart your shell (or run 'source ~/.bashrc') to pick up PATH and shell changes."
 fi
