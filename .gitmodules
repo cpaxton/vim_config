@@ -1,15 +1,15 @@
 [submodule "molokai"]
 	path = molokai
-	url = git@github.com:tomasr/molokai.git
+	url = https://github.com/tomasr/molokai.git
 [submodule "bundle/Vundle.vim"]
 	path = bundle/Vundle.vim
-	url = git@github.com:VundleVim/Vundle.vim.git
+	url = https://github.com/VundleVim/Vundle.vim.git
 [submodule "bundle/YouCompleteMe"]
 	path = bundle/YouCompleteMe
-	url = git@github.com:ycm-core/YouCompleteMe.git
+	url = https://github.com/ycm-core/YouCompleteMe.git
 [submodule "bundle/urdf-vim"]
 	path = bundle/urdf-vim
-	url = git@github.com:PeterMitrano/urdf-vim.git
+	url = https://github.com/PeterMitrano/urdf-vim.git
 [submodule "pack/github/start/copilot.vim"]
 	path = pack/github/start/copilot.vim
 	url = https://github.com/github/copilot.vim.git

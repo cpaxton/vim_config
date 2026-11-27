@@ -2,8 +2,18 @@
 
 set -eo pipefail
 
-REPO_URL="${REPO_URL:-git@github.com:cpaxton/vim_config.git}"
+SSH_REPO_URL="git@github.com:cpaxton/vim_config.git"
+HTTPS_REPO_URL="https://github.com/cpaxton/vim_config.git"
+REPO_URL_EXPLICIT=0
+if [[ -n "${REPO_URL:-}" ]]; then
+    REPO_URL_EXPLICIT=1
+fi
+REPO_URL="${REPO_URL:-$SSH_REPO_URL}"
+SSH_KEY_SETUP="${SSH_KEY_SETUP:-auto}"
 INSTALL_DIR="${INSTALL_DIR:-$HOME/.vim}"
+
+SSH_KEYFILE=""
+SSH_AUTH_OK=0
 
 TEMP_PATHS=()
 cleanup() {
@@ -50,11 +60,8 @@ detect_arch() {
 ARCH="$(detect_arch)"
 
 GIT_REPO_CONFIG=()
-if [[ "$REPO_URL" == https://* ]]; then
-    GIT_REPO_CONFIG=(-c "url.https://github.com/.insteadOf=git@github.com:")
-fi
 
-APP_ORDER=(uv discord dropbox obsidian opencode codex)
+APP_ORDER=(uv discord dropbox obsidian opencode codex cursor claude)
 declare -A APP_INSTALL=(
     [uv]=install_uv
     [discord]=install_discord
@@ -62,6 +69,8 @@ declare -A APP_INSTALL=(
     [obsidian]=install_obsidian
     [opencode]=install_opencode
     [codex]=install_codex
+    [cursor]=install_cursor
+    [claude]=install_claude
 )
 
 list_apps() {
@@ -72,6 +81,8 @@ dropbox    Dropbox desktop client
 obsidian   Obsidian notes (latest .deb from GitHub)
 opencode   opencode CLI
 codex      OpenAI Codex CLI
+cursor     Cursor CLI
+claude     Claude Code CLI
 EOF
 }
 
@@ -88,16 +99,23 @@ Apps:
 $(list_apps)
 
 Options:
+  --ssh-key     Generate an SSH key if needed and use SSH when GitHub accepts it
+  --no-ssh-key  Skip SSH key setup and clone over HTTPS
   --all         Install every app
   --apps-only   Skip the config setup; only install the named apps
   --list        Print the available apps and exit
   -h, --help    Show this help
+
+By default, SSH setup is automatic: an existing key is used when GitHub
+accepts it; otherwise the installer offers to create a key on a terminal and
+falls back to HTTPS.
 
 Examples:
   ./install.sh                          # config only
   ./install.sh 22                       # config for Ubuntu 22.04
   ./install.sh discord obsidian         # config + those apps
   ./install.sh --all                    # config + every app
+  ./install.sh --no-ssh-key             # always clone over HTTPS
   ./install.sh --apps-only uv           # just install uv
   ./install.sh --apps-only codex        # just install Codex
 EOF
@@ -312,6 +330,16 @@ install_codex() {
     curl -fsSL https://chatgpt.com/codex/install.sh | sh
 }
 
+install_cursor() {
+    info "Installing Cursor CLI"
+    curl -fsS https://cursor.com/install | bash
+}
+
+install_claude() {
+    info "Installing Claude Code"
+    curl -fsSL https://claude.ai/install.sh | bash
+}
+
 install_uv() {
     local bin_dir="${XDG_BIN_HOME:-$HOME/.local/bin}"
     export PATH="$bin_dir:$PATH"
@@ -361,6 +389,155 @@ require_command() {
     fi
 }
 
+find_ssh_key() {
+    local key
+    for key in "$HOME/.ssh/id_ed25519" "$HOME/.ssh/id_rsa" "$HOME/.ssh/id_ecdsa"; do
+        if [[ -f "$key" ]]; then
+            printf '%s\n' "$key"
+            return 0
+        fi
+    done
+    return 1
+}
+
+generate_ssh_key() {
+    local comment
+    comment="${GIT_EMAIL:-$(git config --global user.email 2>/dev/null || true)}"
+    comment="${comment:-$(whoami)@$(hostname)}"
+
+    mkdir -p "$HOME/.ssh"
+    chmod 700 "$HOME/.ssh"
+    info "Generating an ed25519 SSH key at $HOME/.ssh/id_ed25519"
+    if ! ssh-keygen -t ed25519 -C "$comment" -f "$HOME/.ssh/id_ed25519" -N ""; then
+        echo "warning: could not generate an SSH key." >&2
+        return 1
+    fi
+    SSH_KEYFILE="$HOME/.ssh/id_ed25519"
+}
+
+github_ssh_ok() {
+    local key="${1:-}" output
+    local ssh_args=(
+        -o BatchMode=yes
+        -o ConnectTimeout=5
+        -o StrictHostKeyChecking=accept-new
+    )
+    if [[ -n "$key" ]]; then
+        ssh_args=(-i "$key" -o IdentitiesOnly=yes "${ssh_args[@]}")
+    fi
+
+    # GitHub closes the connection with status 1 even when authentication works.
+    output="$(ssh "${ssh_args[@]}" -T git@github.com 2>&1)" || true
+    grep -qi "successfully authenticated" <<<"$output"
+}
+
+show_ssh_key() {
+    local key="$1"
+    [[ -r "${key}.pub" ]] || return 0
+
+    echo
+    echo "Add this public key to GitHub: https://github.com/settings/ssh/new"
+    echo "----------------------------------------------------------------------"
+    cat "${key}.pub"
+    echo "----------------------------------------------------------------------"
+}
+
+setup_ssh_access() {
+    if ((REPO_URL_EXPLICIT)) && [[ "$REPO_URL" != git@* && "$REPO_URL" != ssh://* ]]; then
+        info "Skipping SSH setup because REPO_URL already uses HTTPS"
+        return 0
+    fi
+
+    if [[ "$SSH_KEY_SETUP" == no ]]; then
+        info "Skipping SSH key setup and GitHub SSH check"
+        return 0
+    fi
+
+    SSH_KEYFILE="$(find_ssh_key || true)"
+    local generated=0
+
+    # This also picks up keys loaded in ssh-agent or configured in ~/.ssh/config.
+    if github_ssh_ok ""; then
+        SSH_AUTH_OK=1
+        info "GitHub SSH authentication succeeded"
+        return 0
+    fi
+
+    if [[ -z "$SSH_KEYFILE" ]]; then
+        case "$SSH_KEY_SETUP" in
+            yes)
+                generate_ssh_key || return 0
+                generated=1
+                ;;
+            *)
+                if [[ ! -t 0 ]]; then
+                    info "No SSH key found; SSH will be unavailable"
+                    return 0
+                fi
+                local reply
+                read -rp "No GitHub SSH key found. Generate an ed25519 key without a passphrase? [Y/n] " reply
+                case "$reply" in
+                    [nN]*) info "Skipping SSH key setup"; return 0 ;;
+                esac
+                generate_ssh_key || return 0
+                generated=1
+                ;;
+        esac
+    fi
+
+    if ((generated)); then
+        info "The new SSH key is not on GitHub yet"
+    else
+        info "GitHub does not accept $SSH_KEYFILE yet"
+    fi
+    show_ssh_key "$SSH_KEYFILE"
+    if [[ -t 0 ]]; then
+        local reply
+        read -rp "Add the key at https://github.com/settings/ssh/new, then press Enter to check again (or type s to skip): " reply
+        if [[ "$reply" != [sS] ]] && github_ssh_ok "$SSH_KEYFILE"; then
+            SSH_AUTH_OK=1
+            info "GitHub SSH authentication succeeded."
+        elif [[ "$reply" != [sS] ]]; then
+            echo "warning: GitHub still does not accept the key; continuing over HTTPS." >&2
+        fi
+    fi
+}
+
+configure_repo_url() {
+    if ((REPO_URL_EXPLICIT)); then
+        info "Using repository URL from REPO_URL: $REPO_URL"
+    elif [[ "$SSH_AUTH_OK" == 1 ]]; then
+        REPO_URL="$SSH_REPO_URL"
+        info "Cloning over SSH"
+    else
+        REPO_URL="$HTTPS_REPO_URL"
+        info "Cloning over HTTPS"
+    fi
+
+    GIT_REPO_CONFIG=()
+    if [[ "$REPO_URL" == https://* ]]; then
+        GIT_REPO_CONFIG=(-c "url.https://github.com/.insteadOf=git@github.com:")
+    fi
+}
+
+switch_origin_to_ssh() {
+    if ((REPO_URL_EXPLICIT)); then
+        return 0
+    fi
+    if [[ "$SSH_KEY_SETUP" == no || ! -d "$INSTALL_DIR/.git" ]]; then
+        return 0
+    fi
+
+    local origin
+    origin="$(git -C "$INSTALL_DIR" remote get-url origin 2>/dev/null || true)"
+    [[ "$origin" == https://* ]] || return 0
+
+    if github_ssh_ok ""; then
+        git -C "$INSTALL_DIR" remote set-url origin "$SSH_REPO_URL"
+        info "Switched $INSTALL_DIR origin to SSH"
+    fi
+}
+
 preflight_apps() {
     require_command curl || return 1
 
@@ -386,7 +563,7 @@ check_repo_access() {
 
     if ! git "${GIT_REPO_CONFIG[@]}" ls-remote "$REPO_URL" HEAD >/dev/null 2>&1; then
         echo "Could not access $REPO_URL." >&2
-        echo "Check your SSH key, or run with REPO_URL=https://github.com/cpaxton/vim_config.git" >&2
+        echo "Check your SSH key, or run with --no-ssh-key to clone over HTTPS." >&2
         return 1
     fi
 }
@@ -409,6 +586,7 @@ setup_base() {
         python-is-python3
         curl
         wget
+        openssh-client
         xclip
         net-tools
         unzip
@@ -423,6 +601,10 @@ setup_base() {
         fi
     fi
     sudo apt install -y "${packages[@]}"
+
+    info "Checking GitHub access"
+    setup_ssh_access
+    configure_repo_url
 
     info "Checking repository access"
     check_repo_access
@@ -441,6 +623,7 @@ setup_base() {
         fi
         git "${GIT_REPO_CONFIG[@]}" clone --recursive "$REPO_URL" "$INSTALL_DIR"
     fi
+    switch_origin_to_ssh
 
     info "Setting symbolic links"
     if [[ -e "$HOME/.vimrc" && ! -L "$HOME/.vimrc" ]]; then
@@ -515,6 +698,8 @@ APPS_ONLY=0
 while [[ $# -gt 0 ]]; do
     case "$1" in
         20 | 22 | 24 | 26) UBUNTU_VERSION="$1" ;;
+        --ssh-key) SSH_KEY_SETUP=yes ;;
+        --no-ssh-key) SSH_KEY_SETUP=no ;;
         --all) INSTALL_ALL=1 ;;
         --apps-only) APPS_ONLY=1 ;;
         --list)
